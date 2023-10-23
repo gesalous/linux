@@ -37,6 +37,8 @@
 #define CREATE_TRACE_POINTS
 #include <asm/trace/exceptions.h>
 
+#include <linux/kutrace.h>
+
 /*
  * Returns 0 if mmiotrace is disabled, or if the fault is not
  * handled by mmiotrace:
@@ -1512,6 +1514,8 @@ handle_page_fault(struct pt_regs *regs, unsigned long error_code,
 	if (unlikely(kmmio_fault(regs, address)))
 		return;
 
+	kutrace1(KUTRACE_TRAP + KUTRACE_PAGEFAULT, 0);
+
 	/* Was the fault on kernel-controlled part of the address space? */
 	if (unlikely(fault_in_kernel_space(address))) {
 		do_kern_addr_fault(regs, error_code, address);
@@ -1526,6 +1530,8 @@ handle_page_fault(struct pt_regs *regs, unsigned long error_code,
 		 */
 		local_irq_disable();
 	}
+
+	kutrace1(KUTRACE_TRAPRET + KUTRACE_PAGEFAULT, 0);
 }
 
 DEFINE_IDTENTRY_RAW_ERRORCODE(exc_page_fault)

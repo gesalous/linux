@@ -158,4 +158,6 @@ quiet_cmd_genikh = CHK     $(obj)/kheaders_data.tar.xz
 $(obj)/kheaders_data.tar.xz: FORCE
 	$(call cmd,genikh)
 
+obj-$(CONFIG_KUTRACE) += kutrace/
+
 clean-files := kheaders_data.tar.xz kheaders.md5

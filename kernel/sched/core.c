@@ -95,6 +95,8 @@
 #include "../../io_uring/io-wq.h"
 #include "../smpboot.h"
 
+#include <linux/kutrace.h>
+
 /*
  * Export tracepoints that act as a bare tracehook (ie: have no trace event
  * associated with them) to allow external modules to probe them.
@@ -4062,6 +4064,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 			goto out;
 
 		trace_sched_waking(p);
+		kutrace1(KUTRACE_RUNNABLE, p->pid);
 		WRITE_ONCE(p->__state, TASK_RUNNING);
 		trace_sched_wakeup(p);
 		goto out;
@@ -4079,6 +4082,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		goto unlock;
 
 	trace_sched_waking(p);
+	kutrace1(KUTRACE_RUNNABLE, p->pid);
 
 	/*
 	 * Ensure we load p->on_rq _after_ p->state, otherwise it would
@@ -6408,6 +6412,8 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 	struct rq *rq;
 	int cpu;
 
+	kutrace1(KUTRACE_SYSCALL64 + kutrace_map_nr(KUTRACE_SCHEDSYSCALL), 0);
+
 	cpu = smp_processor_id();
 	rq = cpu_rq(cpu);
 	prev = rq->curr;
@@ -6517,6 +6523,10 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 
 		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next, prev_state);
 
+		/* Put pid name into trace first time */
+		kutrace_pidname(next);
+		kutrace1(KUTRACE_USERPID, next->pid);
+
 		/* Also unlocks the rq: */
 		rq = context_switch(rq, prev, next, &rf);
 	} else {
@@ -6526,6 +6536,7 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 		__balance_callbacks(rq);
 		raw_spin_rq_unlock_irq(rq);
 	}
+	kutrace1(KUTRACE_SYSRET64 + kutrace_map_nr(KUTRACE_SCHEDSYSCALL), 0);
 }
 
 void __noreturn do_task_dead(void)

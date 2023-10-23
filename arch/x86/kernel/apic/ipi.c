@@ -6,6 +6,8 @@
 
 #include "local.h"
 
+#include <linux/kutrace.h>
+
 DEFINE_STATIC_KEY_FALSE(apic_use_ipi_shorthand);
 
 #ifdef CONFIG_SMP
@@ -68,16 +70,21 @@ void native_smp_send_reschedule(int cpu)
 		WARN(1, "sched: Unexpected reschedule of offline CPU#%d!\n", cpu);
 		return;
 	}
+	kutrace1(KUTRACE_IPI, cpu);
 	apic->send_IPI(cpu, RESCHEDULE_VECTOR);
 }
 
 void native_send_call_func_single_ipi(int cpu)
 {
+	kutrace1(KUTRACE_IPI, cpu);
 	apic->send_IPI(cpu, CALL_FUNCTION_SINGLE_VECTOR);
 }
 
 void native_send_call_func_ipi(const struct cpumask *mask)
 {
+	/* Use CPU 0 as a placeholder to indicate when mask was sent */
+	kutrace1(KUTRACE_IPI, 0);
+
 	if (static_branch_likely(&apic_use_ipi_shorthand)) {
 		unsigned int cpu = smp_processor_id();
 

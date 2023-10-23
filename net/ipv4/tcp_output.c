@@ -46,6 +46,7 @@
 #include <linux/static_key.h>
 
 #include <trace/events/tcp.h>
+#include <linux/kutrace.h>
 
 /* Refresh clocks of a TCP socket,
  * ensuring monotically increasing values.
@@ -1398,6 +1399,15 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 			       sizeof(struct inet6_skb_parm)));
 
 	tcp_add_tx_delay(skb, tp);
+
+/* Apply quick filter and if it passes, make a KUtrace entry for tx packet. */
+/* Use XOR of first 32 bytes as the recorded argument value */
+#ifdef CONFIG_KUTRACE
+	if (kutrace_tracing && ((tcp_header_size + 32) <= skb->len)) {
+		const u64 *ku_payload = (u64*)(skb->data + tcp_header_size);
+		kutrace_pkttrace(KUTRACE_TX_PKT, ku_payload);
+        }
+#endif
 
 	err = INDIRECT_CALL_INET(icsk->icsk_af_ops->queue_xmit,
 				 inet6_csk_xmit, ip_queue_xmit,

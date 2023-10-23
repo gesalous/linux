@@ -46,6 +46,15 @@ config FORCE_DYNAMIC_FTRACE
 	  generic code, as other architectures still use it. But we
 	  only need to keep it around for x86_64. No need to keep it
 	  for x86_32. For x86_32, force DYNAMIC_FTRACE.
+
+config KUTRACE
+	bool "KUtrace kernel/user tracing"
+	depends on 64BIT
+	def_bool n
+	help
+	  Enables kernel/user transition tracing patches, in conjunction with 
+	  the kutrace_mod loadable module.
+
 #
 # Arch settings
 #

@@ -117,6 +117,8 @@
 #include <net/ipv6_stubs.h>
 #endif
 
+#include <linux/kutrace.h>
+
 struct udp_table udp_table __read_mostly;
 EXPORT_SYMBOL(udp_table);
 
@@ -968,6 +970,16 @@ csum_partial:
 		uh->check = CSUM_MANGLED_0;
 
 send:
+/* Apply quick filter and if it passes, make a KUtrace entry for tx packet. */
+/* Use XOR of first 32 bytes as the recorded argument value */
+#ifdef CONFIG_KUTRACE
+	if (kutrace_tracing && ((8 + 32) <= len)) {
+		int ku_hdr_len = 8;
+		const u64 *ku_payload = (u64*)((u8*)(uh) + ku_hdr_len);
+		kutrace_pkttrace(KUTRACE_TX_PKT, ku_payload);
+        }
+#endif
+
 	err = ip_send_skb(sock_net(sk), skb);
 	if (err) {
 		if (err == -ENOBUFS && !inet->recverr) {
@@ -2442,6 +2454,17 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
 
 	if (udp4_csum_init(skb, uh, proto))
 		goto csum_error;
+
+/* Apply quick filter and if it passes, make a KUtrace entry for rx packet. */
+/* Use XOR of first 32 bytes as the recorded argument value */
+#ifdef CONFIG_KUTRACE
+	if (kutrace_tracing && ((8 + 32) <= ulen)) {
+		int ku_hdr_len = 8;
+		const u64 *ku_payload = (u64*)((u8*)(uh) + ku_hdr_len);
+		kutrace_pkttrace(KUTRACE_RX_PKT, ku_payload);
+        }
+
+#endif
 
 	sk = skb_steal_sock(skb, &refcounted);
 	if (sk) {
