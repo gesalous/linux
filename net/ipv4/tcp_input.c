@@ -81,6 +81,8 @@
 #include <net/busy_poll.h>
 #include <net/mptcp.h>
 
+#include <linux/kutrace.h>
+
 int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
 
 #define FLAG_DATA		0x01 /* Incoming frame contained data.		*/
@@ -5856,6 +5858,19 @@ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb)
 	const struct tcphdr *th = (const struct tcphdr *)skb->data;
 	struct tcp_sock *tp = tcp_sk(sk);
 	unsigned int len = skb->len;
+
+/* Apply quick filter and if it passes, make a KUtrace entry for */
+/* rx packet. Use XOR of first 32 bytes as the recorded argument value */
+#ifdef CONFIG_KUTRACE
+	if (kutrace_tracing && ((20 + 32) <= len)) {
+		int ku_hdr_len = th->doff << 2;
+		const u64 *ku_payload = (u64*)(skb->data + ku_hdr_len);
+		int ku_payloadlen = len - ku_hdr_len;
+		if (32 <= ku_payloadlen) {
+			kutrace_pkttrace(KUTRACE_RX_PKT, ku_payload);
+		}
+        }
+#endif
 
 	/* TCP congestion window tracking */
 	trace_tcp_probe(sk, skb);

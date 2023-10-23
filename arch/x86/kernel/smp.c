@@ -36,6 +36,8 @@
 #include <asm/kexec.h>
 #include <asm/reboot.h>
 
+#include <linux/kutrace.h>
+
 /*
  *	Some notes on x86 processor bugs affecting SMP operation:
  *
@@ -269,28 +271,35 @@ done:
 DEFINE_IDTENTRY_SYSVEC_SIMPLE(sysvec_reschedule_ipi)
 {
 	ack_APIC_irq();
+
+	kutrace1(KUTRACE_IRQ + RESCHEDULE_VECTOR, 0);
 	trace_reschedule_entry(RESCHEDULE_VECTOR);
 	inc_irq_stat(irq_resched_count);
 	scheduler_ipi();
 	trace_reschedule_exit(RESCHEDULE_VECTOR);
+	kutrace1(KUTRACE_IRQRET + RESCHEDULE_VECTOR, 0);
 }
 
 DEFINE_IDTENTRY_SYSVEC(sysvec_call_function)
 {
 	ack_APIC_irq();
+	kutrace1(KUTRACE_IRQ + CALL_FUNCTION_VECTOR, 0);
 	trace_call_function_entry(CALL_FUNCTION_VECTOR);
 	inc_irq_stat(irq_call_count);
 	generic_smp_call_function_interrupt();
 	trace_call_function_exit(CALL_FUNCTION_VECTOR);
+	kutrace1(KUTRACE_IRQRET + CALL_FUNCTION_VECTOR, 0);
 }
 
 DEFINE_IDTENTRY_SYSVEC(sysvec_call_function_single)
 {
 	ack_APIC_irq();
+	kutrace1(KUTRACE_IRQ + CALL_FUNCTION_SINGLE_VECTOR, 0);
 	trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR);
 	inc_irq_stat(irq_call_count);
 	generic_smp_call_function_single_interrupt();
 	trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR);
+	kutrace1(KUTRACE_IRQRET + CALL_FUNCTION_SINGLE_VECTOR, 0);
 }
 
 static int __init nonmi_ipi_setup(char *str)

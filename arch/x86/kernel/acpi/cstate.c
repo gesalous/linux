@@ -16,6 +16,8 @@
 #include <asm/mwait.h>
 #include <asm/special_insns.h>
 
+#include <linux/kutrace.h>
+
 /*
  * Initialize bm_flags based on the CPU cache properties
  * On SMP it depends on cache configuration
@@ -210,6 +212,7 @@ void __cpuidle acpi_processor_ffh_cstate_enter(struct acpi_processor_cx *cx)
 	struct cstate_entry *percpu_entry;
 
 	percpu_entry = per_cpu_ptr(cpu_cstate_entry, cpu);
+	kutrace1(KUTRACE_MWAIT, percpu_entry->states[cx->index].eax);
 	mwait_idle_with_hints(percpu_entry->states[cx->index].eax,
 	                      percpu_entry->states[cx->index].ecx);
 }

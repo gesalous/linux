@@ -26,6 +26,8 @@
 #define CREATE_TRACE_POINTS
 #include <asm/trace/irq_vectors.h>
 
+#include <linux/kutrace.h>
+
 DEFINE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
 EXPORT_PER_CPU_SYMBOL(irq_stat);
 
@@ -249,6 +251,8 @@ DEFINE_IDTENTRY_IRQ(common_interrupt)
 	struct pt_regs *old_regs = set_irq_regs(regs);
 	struct irq_desc *desc;
 
+	kutrace1(KUTRACE_IRQ + (vector & 0xFF), 0);
+
 	/* entry code tells RCU that we're not quiescent.  Check it. */
 	RCU_LOCKDEP_WARN(!rcu_is_watching(), "IRQ failed to wake up RCU");
 
@@ -267,6 +271,7 @@ DEFINE_IDTENTRY_IRQ(common_interrupt)
 		}
 	}
 
+	kutrace1(KUTRACE_IRQRET + (vector & 0xFF), 0);
 	set_irq_regs(old_regs);
 }
 
@@ -281,11 +286,13 @@ DEFINE_IDTENTRY_SYSVEC(sysvec_x86_platform_ipi)
 	struct pt_regs *old_regs = set_irq_regs(regs);
 
 	ack_APIC_irq();
+	kutrace1(KUTRACE_IRQ + X86_PLATFORM_IPI_VECTOR, 0);
 	trace_x86_platform_ipi_entry(X86_PLATFORM_IPI_VECTOR);
 	inc_irq_stat(x86_platform_ipis);
 	if (x86_platform_ipi_callback)
 		x86_platform_ipi_callback();
 	trace_x86_platform_ipi_exit(X86_PLATFORM_IPI_VECTOR);
+	kutrace1(KUTRACE_IRQRET + X86_PLATFORM_IPI_VECTOR, 0);
 	set_irq_regs(old_regs);
 }
 #endif

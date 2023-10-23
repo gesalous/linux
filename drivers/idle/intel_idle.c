@@ -58,6 +58,8 @@
 #include <asm/msr.h>
 #include <asm/fpu/api.h>
 
+#include <linux/kutrace.h>
+
 #define INTEL_IDLE_VERSION "0.5.1"
 
 static struct cpuidle_driver intel_idle_driver = {
@@ -137,6 +139,7 @@ static __always_inline int __intel_idle(struct cpuidle_device *dev,
 	unsigned long eax = flg2MWAIT(state->flags);
 	unsigned long ecx = 1; /* break on interrupt flag */
 
+	kutrace1(KUTRACE_MWAIT, eax);
 	mwait_idle_with_hints(eax, ecx);
 
 	return index;
@@ -221,6 +224,7 @@ static __cpuidle int intel_idle_s2idle(struct cpuidle_device *dev,
 	if (state->flags & CPUIDLE_FLAG_INIT_XSTATE)
 		fpu_idle_fpregs();
 
+	kutrace1(KUTRACE_MWAIT, eax);
 	mwait_idle_with_hints(eax, ecx);
 
 	return 0;
